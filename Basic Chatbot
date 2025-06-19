@@ -1,0 +1,45 @@
+# Install required packages first
+#!pip install streamlit anthropic boto3
+
+import streamlit as st
+import os
+import boto3
+from anthropic import AnthropicBedrock
+
+# Configure AWS Bedrock client
+client = AnthropicBedrock(
+    aws_access_key=os.getenv("Access Key"),
+    aws_secret_key=os.getenv("Secret Key"),
+    aws_region=os.getenv("us-east-1")
+)
+
+st.title("Madhavi GenAI App")
+
+# Create chat interface
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# Handle user input
+if prompt := st.chat_input("Ask Claude 3.5 Sonnet..."):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
+    with st.chat_message("assistant"):
+        response = client.messages.create(
+            model="anthropic.claude-3-5-sonnet-20240620-v1:0",
+            max_tokens=512,
+            temperature=0.5,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        full_response = response.content[0].text
+        st.markdown(full_response)
+    
+    st.session_state.messages.append({"role": "assistant", "content": full_response})
+
+# to run this pgm - streamlit run claude3_streamlit2.py
